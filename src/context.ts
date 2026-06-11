@@ -4,21 +4,12 @@
 
 import * as fs from 'fs/promises';
 import * as path from 'path';
+import { ProjectContext } from './types/context';
 
 /**
  * 預設忽略的檔案與目錄清單
  */
 export const IGNORE_LIST: string[] = ['node_modules', '.git', 'dist', 'build', 'package-lock.json'];
-
-/**
- * 專案上下文結構介面
- */
-export interface ProjectContext {
-  /** 專案目錄樹狀圖 */
-  tree: string;
-  /** 封裝後的 XML 文本 */
-  xml: string;
-}
 
 /**
  * 遞迴獲取目錄下的所有檔案路徑

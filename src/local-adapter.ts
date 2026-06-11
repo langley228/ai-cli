@@ -2,16 +2,10 @@
  * 地端免 Token 防禦適配器：為個人開發者、企業隱私環境或無 Token 狀態提供降級方案。
  */
 
+import { LocalResponse } from './types/local-adapter';
+
 /** Ollama API 預設端點 */
 export const OLLAMA_ENDPOINT = 'http://localhost:11434';
-
-/** 地端或模擬回應的結構介面 */
-export interface LocalResponse {
-  /** 回應來源 */
-  source: 'ollama' | 'mock';
-  /** 回應文本內容 */
-  content: string;
-}
 
 /**
  * 呼叫本地 Ollama 服務獲取回應

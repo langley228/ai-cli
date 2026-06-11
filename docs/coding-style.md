@@ -42,8 +42,10 @@
 
 ---
 
-## 5. 自動化工具
+## 6. 介面與實作分離 (Interface-Implementation Separation)
 
-- **格式化**: 使用 Prettier。
-- **檢查**: 使用 ESLint (嚴格模式)。
-- **編譯**: 使用 `tsc` 進行嚴格型別檢查。
+為了明確定義系統的「合約」與「實作」，本專案採用以下結構：
+
+- **`src/types/`**: 存放所有導出的公用 Interface 與 Type。這代表了專案的技術合約 (Contract)。
+- **`src/*.ts`**: 存放具體的實作邏輯 (Implementation)。
+- **規範**: 實作檔案應從 `src/types/` 引入型別。這有助於避免循環依賴，並讓開發者能快速掌握系統的資料結構。

@@ -1,0 +1,24 @@
+{
+  "name": "ai-cli",
+  "version": "0.1.0",
+  "description": "開源 AI 代理調度馬具（AI CLI Harness）— 統一封裝 Claude Code、Copilot CLI、Gemini CLI、OpenAI Codex 等多平台 AI 工具",
+  "main": "dist/cli.js",
+  "bin": {
+    "ai-cli": "dist/cli.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/cli.js",
+    "dev": "ts-node src/cli.ts"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "chalk": "^4.1.2",
+    "commander": "^12.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.4.0"
+  }
+}

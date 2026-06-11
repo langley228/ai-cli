@@ -16,10 +16,22 @@ import { DetectedCredential } from './types/init';
 function getConfigPaths() {
   const home = os.homedir();
   return {
-    'github-copilot': path.join(home, '.config/gh/hosts.yml'),
-    'claude-code': path.join(home, '.config/claude-code/config.json'),
-    'openai': path.join(home, '.config/openai.json'),
-    'gemini': path.join(home, '.config/gcloud/application_default_credentials.json'),
+    'github-copilot': [
+      path.join(home, '.config/gh/hosts.yml'),
+      path.join(home, '.copilot/config.json'),
+    ],
+    'claude-code': [
+      path.join(home, '.claude/settings.json'),
+      path.join(home, '.claude.json'),
+    ],
+    'openai': [
+      path.join(home, '.codex/auth.json'),
+      path.join(home, '.openai/config.json'),
+    ],
+    'gemini': [
+      path.join(home, '.gemini/settings.json'),
+      path.join(home, '.config/gcloud/application_default_credentials.json'),
+    ],
   };
 }
 
@@ -46,20 +58,35 @@ function encrypt(text: string): string {
  */
 export async function detectCredentials(): Promise<DetectedCredential[]> {
   const detected: DetectedCredential[] = [];
-  const configPaths = getConfigPaths();
+  const configPathsMap = getConfigPaths();
 
-  for (const [platform, configPath] of Object.entries(configPaths)) {
-    try {
-      await fs.access(configPath);
-      // 模擬提取邏輯：實際開發時應根據各平台格式解析檔案
-      detected.push({
-        platform: platform as DetectedCredential['platform'],
-        source: configPath,
-        value: `extracted-key-from-${platform}`,
-      });
-      console.log(chalk.blue(`偵測到 ${platform} 設定檔：${configPath}`));
-    } catch {
-      // 檔案不存在則跳過
+  for (const [platform, paths] of Object.entries(configPathsMap)) {
+    for (const configPath of paths) {
+      try {
+        await fs.access(configPath);
+        const content = await fs.readFile(configPath, 'utf-8');
+        
+        // 簡易提取邏輯 (實際開發應加入 YAML/JSON 解析)
+        let value = '';
+        if (configPath.endsWith('.json')) {
+          const json = JSON.parse(content);
+          value = json.oauth_token || json.ANTHROPIC_API_KEY || json.apiKey || json.token || '';
+        } else if (configPath.endsWith('.yml') || configPath.endsWith('.yaml')) {
+          // 針對 gh hosts.yml 的簡易正則提取
+          const match = content.match(/oauth_token:\s*(\S+)/);
+          if (match) value = match[1];
+        }
+
+        detected.push({
+          platform: platform as DetectedCredential['platform'],
+          source: configPath,
+          value: value || `found-at-${configPath}`,
+        });
+        console.log(chalk.blue(`偵測到 ${platform} 設定檔：${configPath}`));
+        break; // 每個平台找到一個有效的就跳過後續路徑
+      } catch {
+        // 檔案不存在或解析失敗則跳過
+      }
     }
   }
 

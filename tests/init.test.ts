@@ -2,7 +2,6 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { detectCredentials, encryptAndStore } from '../src/init';
 import * as fs from 'fs/promises';
 import * as os from 'os';
-import * as path from 'path';
 
 vi.mock('fs/promises');
 vi.mock('os');
@@ -14,16 +13,38 @@ describe('init 模組', () => {
   });
 
   it('應該能偵測到存在的設定檔', async () => {
-    // 模擬 fs.access 成功 (檔案存在)
-    vi.mocked(fs.access).mockResolvedValue(undefined);
+    // 模擬 fs.access
+    vi.mocked(fs.access).mockImplementation(async (filePath: any) => {
+      // console.log('Checking path:', filePath);
+      const p = filePath.toString();
+      if (
+        p.includes('hosts.yml') || 
+        p.includes('settings.json') || 
+        p.includes('auth.json') ||
+        p.includes('application_default_credentials.json')
+      ) {
+        return undefined;
+      }
+      throw new Error('File not found');
+    });
+
     // 模擬 fs.readFile
-    vi.mocked(fs.readFile).mockResolvedValue('fake content');
+    vi.mocked(fs.readFile).mockImplementation(async (filePath: any) => {
+      const p = filePath.toString();
+      if (p.endsWith('.json')) {
+        return JSON.stringify({ oauth_token: 'key123' });
+      }
+      return 'oauth_token: key123';
+    });
 
     const creds = await detectCredentials();
     
-    // 應該偵測到 CONFIG_PATHS 中的四個平台
+    // 應該偵測到四個平台 (github-copilot, claude-code, openai, gemini)
     expect(creds.length).toBe(4);
     expect(creds[0].platform).toBe('github-copilot');
+    expect(creds[1].platform).toBe('claude-code');
+    expect(creds[2].platform).toBe('openai');
+    expect(creds[3].platform).toBe('gemini');
   });
 
   it('應該能將憑證加密並儲存', async () => {
@@ -36,7 +57,6 @@ describe('init 模組', () => {
     expect(mkdirSpy).toHaveBeenCalledWith(expect.stringContaining('.omni'), { recursive: true });
     expect(writeFileSpy).toHaveBeenCalled();
     
-    // 檢查寫入的內容是否包含 'data' 欄位 (加密後的 JSON)
     const callArgs = writeFileSpy.mock.calls[0];
     const writtenContent = JSON.parse(callArgs[1] as string);
     expect(writtenContent).toHaveProperty('data');

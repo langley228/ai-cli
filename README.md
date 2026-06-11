@@ -86,6 +86,39 @@ omni "重構此非同步邏輯" --mock
 
 ---
 
+## 🚀 快速上手
+
+### 1. 安裝與編譯
+```bash
+npm install
+npm run build
+```
+
+### 2. 初始化憑證 (一刀流偵測)
+```bash
+node dist/cli.js init
+```
+
+### 3. 執行任務
+```bash
+# 自動挑選最適合的 AI
+node dist/cli.js "幫我重構 src/core.ts"
+
+# 強制使用 Mock 模式進行測試
+node dist/cli.js "檢查記憶體洩漏" --mock
+```
+
+---
+
+## 📚 技術文件
+
+詳細的架構說明與開發規範請參閱 `docs/` 目錄：
+- [架構總覽 (Architecture)](docs/architecture.md)
+- [安全與加密規範 (Security)](docs/security.md)
+- [地端適配與降級機制 (Local & Fallback)](docs/fallback.md)
+
+---
+
 ## 📅 開發進度追蹤 (100% 完工)
 
 - [x] **一刀流智慧初始化模組** (全平台官方憑證自動提取、智慧預勾選、AES-256 加密)

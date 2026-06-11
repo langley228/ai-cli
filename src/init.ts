@@ -1,48 +1,88 @@
 /**
- * 一刀流智慧初始化模組：自動掃描、提取並確認全平台 AI 憑證，完成高強度加密儲存。
+ * 一刀流智慧初始化模組：協調各平台的專屬偵測器，並進行 AES-256-GCM 加密儲存。
  */
 
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import * as os from 'os';
 import * as crypto from 'crypto';
+import { exec } from 'child_process';
+import { promisify } from 'util';
 import chalk from 'chalk';
 import { DetectedCredential } from './types/init';
 
-/**
- * 獲取預設的官方設定檔路徑清單
- * @returns 平台與路徑的對應物件
- */
-function getConfigPaths() {
-  const home = os.homedir();
-  return {
-    'github-copilot': [
-      path.join(home, '.config/gh/hosts.yml'),
-      path.join(home, '.copilot/config.json'),
-    ],
-    'claude-code': [
-      path.join(home, '.claude/settings.json'),
-      path.join(home, '.claude.json'),
-    ],
-    'openai': [
-      path.join(home, '.codex/auth.json'),
-      path.join(home, '.openai/config.json'),
-    ],
-    'gemini': [
-      path.join(home, '.gemini/settings.json'),
-      path.join(home, '.config/gcloud/application_default_credentials.json'),
-    ],
-  };
-}
+const execAsync = promisify(exec);
+export const utils = { execAsync };
 
-/** 加密使用的金鑰 (應從環境變數或安全存儲獲取，此處為示範) */
+/** 加密使用的金鑰 */
 const ENCRYPTION_KEY = crypto.scryptSync('omni-secret-salt', 'salt', 32);
 const IV_LENGTH = 16;
 
 /**
+ * 偵測 GitHub Copilot 憑證
+ */
+async function detectGitHubCopilot(): Promise<string | undefined> {
+  // 1. CLI
+  try {
+    const { stdout } = await utils.execAsync('gh auth token');
+    return stdout.trim();
+  } catch (e) {
+    console.log('GitHub CLI failed', e);
+  }
+  // 2. ENV
+  if (process.env.GH_TOKEN || process.env.GITHUB_TOKEN) return process.env.GH_TOKEN || process.env.GITHUB_TOKEN;
+  // 3. File
+  try {
+    const content = await fs.readFile(path.join(os.homedir(), '.config/gh/hosts.yml'), 'utf-8');
+    const match = content.match(/oauth_token:\s*(\S+)/);
+    return match ? match[1] : undefined;
+  } catch { return undefined; }
+}
+
+/**
+ * 偵測 Claude Code 憑證
+ */
+async function detectClaudeCode(): Promise<string | undefined> {
+  // 1. ENV
+  if (process.env.ANTHROPIC_API_KEY) return process.env.ANTHROPIC_API_KEY;
+  // 2. File
+  try {
+    const content = await fs.readFile(path.join(os.homedir(), '.claude/settings.json'), 'utf-8');
+    const json = JSON.parse(content);
+    return json.env?.ANTHROPIC_API_KEY || json.apiKey;
+  } catch { return undefined; }
+}
+
+/**
+ * 偵測 OpenAI 憑證
+ */
+async function detectOpenAI(): Promise<string | undefined> {
+  // 1. ENV
+  if (process.env.OPENAI_API_KEY) return process.env.OPENAI_API_KEY;
+  // 2. File
+  try {
+    const content = await fs.readFile(path.join(os.homedir(), '.openai/config.json'), 'utf-8');
+    const json = JSON.parse(content);
+    return json.apiKey;
+  } catch { return undefined; }
+}
+
+/**
+ * 偵測 Gemini 憑證
+ */
+async function detectGemini(): Promise<string | undefined> {
+  // 1. ENV
+  if (process.env.GEMINI_API_KEY) return process.env.GEMINI_API_KEY;
+  // 2. ADC File
+  try {
+    const content = await fs.readFile(path.join(os.homedir(), '.config/gcloud/application_default_credentials.json'), 'utf-8');
+    const json = JSON.parse(content);
+    return json.client_id; // 簡易 ADC 識別
+  } catch { return undefined; }
+}
+
+/**
  * 使用 AES-256-GCM 加密字串
- * @param text 待加密文本
- * @returns Base64 編碼的加密結果 (包含 IV + Tag + Ciphertext)
  */
 function encrypt(text: string): string {
   const iv = crypto.randomBytes(IV_LENGTH);
@@ -54,48 +94,28 @@ function encrypt(text: string): string {
 
 /**
  * 自動偵測本地已存在的 AI 平台憑證
- * @returns 偵測到的憑證列表
  */
 export async function detectCredentials(): Promise<DetectedCredential[]> {
+  const handlers: { platform: DetectedCredential['platform'], detector: () => Promise<string | undefined> }[] = [
+    { platform: 'github-copilot', detector: detectGitHubCopilot },
+    { platform: 'claude-code', detector: detectClaudeCode },
+    { platform: 'openai', detector: detectOpenAI },
+    { platform: 'gemini', detector: detectGemini },
+  ];
+
   const detected: DetectedCredential[] = [];
-  const configPathsMap = getConfigPaths();
-
-  for (const [platform, paths] of Object.entries(configPathsMap)) {
-    for (const configPath of paths) {
-      try {
-        await fs.access(configPath);
-        const content = await fs.readFile(configPath, 'utf-8');
-        
-        // 簡易提取邏輯 (實際開發應加入 YAML/JSON 解析)
-        let value = '';
-        if (configPath.endsWith('.json')) {
-          const json = JSON.parse(content);
-          value = json.oauth_token || json.ANTHROPIC_API_KEY || json.apiKey || json.token || '';
-        } else if (configPath.endsWith('.yml') || configPath.endsWith('.yaml')) {
-          // 針對 gh hosts.yml 的簡易正則提取
-          const match = content.match(/oauth_token:\s*(\S+)/);
-          if (match) value = match[1];
-        }
-
-        detected.push({
-          platform: platform as DetectedCredential['platform'],
-          source: configPath,
-          value: value || `found-at-${configPath}`,
-        });
-        console.log(chalk.blue(`偵測到 ${platform} 設定檔：${configPath}`));
-        break; // 每個平台找到一個有效的就跳過後續路徑
-      } catch {
-        // 檔案不存在或解析失敗則跳過
-      }
+  for (const { platform, detector } of handlers) {
+    const value = await detector();
+    if (value) {
+      detected.push({ platform, source: 'auto-detected', value });
+      console.log(chalk.blue(`偵測到 ${platform} 憑證。`));
     }
   }
-
   return detected;
 }
 
 /**
  * 將憑證加密並儲存至使用者目錄
- * @param credentials 待儲存的憑證
  */
 export async function encryptAndStore(credentials: DetectedCredential[]): Promise<void> {
   try {

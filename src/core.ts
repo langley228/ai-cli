@@ -6,11 +6,43 @@ import * as fs from 'fs/promises';
 import * as path from 'path';
 import * as os from 'os';
 import * as crypto from 'crypto';
+import Anthropic from '@anthropic-ai/sdk';
+import { GoogleGenerativeAI } from '@google/generative-ai';
+import OpenAI from 'openai';
 import { ProjectContext } from './types/context';
 import { Platform, DispatchOptions, DispatchResult } from './types/core';
 import { runMock, runOllama } from './local-adapter';
 
-/** 加密使用的金鑰 (必須與 init.ts 一致) */
+// ... (keep ENCRYPTION_KEY, decrypt)
+
+async function callClaude(prompt: string, context: ProjectContext, apiKey: string): Promise<string> {
+  const anthropic = new Anthropic({ apiKey });
+  const msg = await anthropic.messages.create({
+    model: 'claude-3-5-sonnet-20241022',
+    max_tokens: 1024,
+    messages: [{ role: 'user', content: `${prompt}\n\nContext:\n${context.xml}` }],
+  });
+  return (msg.content[0] as any).text;
+}
+
+async function callGemini(prompt: string, context: ProjectContext, apiKey: string): Promise<string> {
+  const genAI = new GoogleGenerativeAI(apiKey);
+  const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+  const result = await model.generateContent(`${prompt}\n\nContext:\n${context.xml}`);
+  return result.response.text();
+}
+
+async function callOpenAI(prompt: string, context: ProjectContext, apiKey: string): Promise<string> {
+  const openai = new OpenAI({ apiKey });
+  const completion = await openai.chat.completions.create({
+    model: 'gpt-4o',
+    messages: [{ role: 'user', content: `${prompt}\n\nContext:\n${context.xml}` }],
+  });
+  return completion.choices[0].message.content || '';
+}
+
+// ... (update dispatch function)
+
 const ENCRYPTION_KEY = crypto.scryptSync('omni-secret-salt', 'salt', 32);
 
 /**
@@ -85,16 +117,22 @@ export async function dispatch(
   // 2. 挑選平台並檢查憑證
   const credentials = await getStoredCredentials();
   const platform = await selectPlatform(prompt);
+  const cred = credentials.find((c) => c.platform.startsWith(platform.split('-')[0]));
   
-  // 簡易憑證匹配邏輯
-  const hasCreds = credentials.some((c) => c.platform.startsWith(platform.split('-')[0]));
-
-  if (hasCreds) {
-    // TODO: 串接實際平台 SDK (如 @anthropic-ai/sdk)
-    return {
-      platform,
-      output: `[模擬 ${platform} 回應] 專案打包大小: ${context.xml.length} bytes。正在處理任務: ${prompt}`,
-    };
+  if (cred && cred.value) {
+    try {
+      let output = '';
+      if (platform === 'claude-code') output = await callClaude(prompt, context, cred.value);
+      else if (platform === 'gemini-cli') output = await callGemini(prompt, context, cred.value);
+      else if (platform === 'openai-codex') output = await callOpenAI(prompt, context, cred.value);
+      else {
+        // Fallback for copilot-cli
+        output = `[模擬 ${platform} 回應] 憑證可用但 SDK 尚未完全串接。任務: ${prompt}`;
+      }
+      return { platform, output };
+    } catch (error) {
+      console.error('呼叫雲端平台失敗，嘗試降級...', error);
+    }
   }
 
   // 3. 降級至本地 Ollama

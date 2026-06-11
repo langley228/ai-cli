@@ -20,13 +20,19 @@ export interface DetectedCredential {
   value?: string;
 }
 
-/** 預設的官方設定檔路徑 */
-const CONFIG_PATHS = {
-  'github-copilot': path.join(os.homedir(), '.config/gh/hosts.yml'),
-  'claude-code': path.join(os.homedir(), '.config/claude-code/config.json'),
-  'openai': path.join(os.homedir(), '.config/openai.json'),
-  'gemini': path.join(os.homedir(), '.config/gcloud/application_default_credentials.json'),
-};
+/**
+ * 獲取預設的官方設定檔路徑清單
+ * @returns 平台與路徑的對應物件
+ */
+function getConfigPaths() {
+  const home = os.homedir();
+  return {
+    'github-copilot': path.join(home, '.config/gh/hosts.yml'),
+    'claude-code': path.join(home, '.config/claude-code/config.json'),
+    'openai': path.join(home, '.config/openai.json'),
+    'gemini': path.join(home, '.config/gcloud/application_default_credentials.json'),
+  };
+}
 
 /** 加密使用的金鑰 (應從環境變數或安全存儲獲取，此處為示範) */
 const ENCRYPTION_KEY = crypto.scryptSync('omni-secret-salt', 'salt', 32);
@@ -51,8 +57,9 @@ function encrypt(text: string): string {
  */
 export async function detectCredentials(): Promise<DetectedCredential[]> {
   const detected: DetectedCredential[] = [];
+  const configPaths = getConfigPaths();
 
-  for (const [platform, configPath] of Object.entries(CONFIG_PATHS)) {
+  for (const [platform, configPath] of Object.entries(configPaths)) {
     try {
       await fs.access(configPath);
       // 模擬提取邏輯：實際開發時應根據各平台格式解析檔案

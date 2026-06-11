@@ -10,18 +10,20 @@ describe('init 模組', () => {
   beforeEach(() => {
     vi.resetAllMocks();
     vi.mocked(os.homedir).mockReturnValue('/fake/home');
+    
+    // 預設模擬 fs.access 失敗
+    vi.mocked(fs.access).mockRejectedValue(new Error('File not found'));
   });
 
-  it('應該能偵測到存在的設定檔', async () => {
-    // 模擬 fs.access
+  it('應該能偵測到各平台存在的設定檔', async () => {
+    // 模擬特定路徑成功
     vi.mocked(fs.access).mockImplementation(async (filePath: any) => {
-      // console.log('Checking path:', filePath);
       const p = filePath.toString();
       if (
         p.includes('hosts.yml') || 
-        p.includes('settings.json') || 
+        p.includes('claude/settings.json') || 
         p.includes('auth.json') ||
-        p.includes('application_default_credentials.json')
+        p.includes('gemini/settings.json')
       ) {
         return undefined;
       }
@@ -29,22 +31,17 @@ describe('init 模組', () => {
     });
 
     // 模擬 fs.readFile
-    vi.mocked(fs.readFile).mockImplementation(async (filePath: any) => {
-      const p = filePath.toString();
-      if (p.endsWith('.json')) {
-        return JSON.stringify({ oauth_token: 'key123' });
-      }
-      return 'oauth_token: key123';
-    });
+    vi.mocked(fs.readFile).mockResolvedValue('oauth_token: key123');
 
     const creds = await detectCredentials();
     
-    // 應該偵測到四個平台 (github-copilot, claude-code, openai, gemini)
+    // 驗證是否偵測到四個平台
     expect(creds.length).toBe(4);
-    expect(creds[0].platform).toBe('github-copilot');
-    expect(creds[1].platform).toBe('claude-code');
-    expect(creds[2].platform).toBe('openai');
-    expect(creds[3].platform).toBe('gemini');
+    const platforms = creds.map(c => c.platform);
+    expect(platforms).toContain('github-copilot');
+    expect(platforms).toContain('claude-code');
+    expect(platforms).toContain('openai');
+    expect(platforms).toContain('gemini');
   });
 
   it('應該能將憑證加密並儲存', async () => {

@@ -116,6 +116,8 @@ node dist/cli.js "檢查記憶體洩漏" --mock
 - [架構總覽 (Architecture)](docs/architecture.md)
 - [安全與加密規範 (Security)](docs/security.md)
 - [地端適配與降級機制 (Local & Fallback)](docs/fallback.md)
+- [Git 分支與 Commit 規範 (Git Standards)](docs/git-standards.md)
+- [Coding Style 與開發規範 (Coding Style)](docs/coding-style.md)
 
 ---
 

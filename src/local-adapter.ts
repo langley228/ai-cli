@@ -11,8 +11,26 @@ export async function runOllama(
   prompt: string,
   model: 'qwen2.5-coder' | 'llama3' = 'qwen2.5-coder'
 ): Promise<LocalResponse> {
-  // TODO: 呼叫 OLLAMA_ENDPOINT 取得回應
-  return { source: 'ollama', content: '' };
+  try {
+    const response = await fetch(`${OLLAMA_ENDPOINT}/api/generate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: model,
+        prompt: prompt,
+        stream: false,
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Ollama error: ${response.statusText}`);
+    }
+
+    const data = (await response.json()) as { response: string };
+    return { source: 'ollama', content: data.response };
+  } catch (error) {
+    return { source: 'ollama', content: `無法連接到 Ollama: ${error instanceof Error ? error.message : String(error)}` };
+  }
 }
 
 export async function runMock(prompt: string): Promise<LocalResponse> {

@@ -1,8 +1,35 @@
 {
-  "permissions": {
-    "deny": [
-      "Read(.env)",
-      "Read(.env.*)"
+  "context": {
+    "fileFiltering": {
+      "respectGitIgnore": true,
+      "respectGeminiIgnore": true
+    }
+  },
+  "tools": {
+    "exclude": [
+      "run_shell_command(curl)",
+      "run_shell_command(wget)",
+      "run_shell_command(dig)",
+      "run_shell_command(nslookup)"
+    ]
+  },
+  "hooks": {
+    "BeforeTool": [
+      {
+        "matcher": "read_file|write_file|replace|run_shell_command",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"${GEMINI_PROJECT_DIR:-.}/.gemini/hooks/protect-system-paths.sh\"",
+            "name": "protect-system-paths"
+          },
+          {
+            "type": "command",
+            "command": "\"${GEMINI_PROJECT_DIR:-.}/.gemini/hooks/protect-sensitive-files.sh\"",
+            "name": "protect-sensitive-files"
+          }
+        ]
+      }
     ]
   }
 }

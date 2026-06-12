@@ -1,3 +1,32 @@
-# 環境變數檔案
+# 敏感資料：對應 .gemini/hooks/protect-sensitive-files.sh 的宣告式補強層。
+# 作用為「過濾自動發現 / 搜尋 / @ 補全 / read_many_files」，非硬性阻擋；
+# 真正的硬封鎖由 BeforeTool hook 負責。gitignore 語法，任意深度遞迴。
+# 注意：.env / .env.* 不會命中範本 .example.env（檔名不符）。
+
+# 環境變數金鑰
 .env
 .env.*
+
+# 機密目錄
+secrets/
+
+# 憑證 / 私鑰 / 金鑰庫
+*.pem
+*.key
+*.p12
+*.pfx
+*.keystore
+*.jks
+
+# SSH 私鑰與目錄
+id_rsa
+id_dsa
+id_ecdsa
+id_ed25519
+.ssh/
+
+# 雲端 / 登入憑證
+.aws/
+.netrc
+.pgpass
+credentials.json

@@ -84,14 +84,25 @@ async function detectOpenAI(): Promise<string | undefined> {
  * 偵測 Gemini 憑證
  */
 async function detectGemini(): Promise<string | undefined> {
-  // 1. ENV
-  if (process.env.GEMINI_API_KEY) return process.env.GEMINI_API_KEY;
-  // 2. ADC File
+  // 1. ENV (最高優先權)
+  if (process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY) {
+    return process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
+  }
+  // 2. File: ~/.gemini/oauth_creds.json
   try {
-    const content = await fs.readFile(path.join(os.homedir(), '.config/gcloud/application_default_credentials.json'), 'utf-8');
+    const content = await fs.readFile(path.join(os.homedir(), '.gemini/oauth_creds.json'), 'utf-8');
     const json = JSON.parse(content);
-    return json.client_id; // 簡易 ADC 識別
-  } catch { return undefined; }
+    return json.access_token;
+  } catch { /* ignore */ }
+  // 3. File: Application Default Credentials (ADC)
+  try {
+    const adcPath = process.env.GOOGLE_APPLICATION_CREDENTIALS || 
+                    path.join(os.homedir(), '.config/gcloud/application_default_credentials.json');
+    const content = await fs.readFile(adcPath, 'utf-8');
+    const json = JSON.parse(content);
+    return json.client_id || json.client_secret || json.quota_project_id; 
+  } catch { /* ignore */ }
+  return undefined;
 }
 
 /**

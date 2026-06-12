@@ -6,6 +6,8 @@
 import { Command } from 'commander';
 import chalk from 'chalk';
 import { runInit } from './init';
+
+import { listCredentials } from './config';
 import { buildContext } from './context';
 import { dispatch } from './core';
 
@@ -29,6 +31,16 @@ program
     } catch (error) {
       console.error(chalk.red('❌ 初始化失敗:'), error);
     }
+  });
+
+/**
+ * 註冊 config 指令
+ */
+program
+  .command('config')
+  .description('檢視當前已加密儲存的憑證設定')
+  .action(async () => {
+    await listCredentials();
   });
 
 /**

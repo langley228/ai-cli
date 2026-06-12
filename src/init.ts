@@ -55,7 +55,8 @@ async function detectClaudeCode(): Promise<string | undefined> {
   try {
     const content = await fs.readFile(path.join(os.homedir(), '.claude/.credentials.json'), 'utf-8');
     const json = JSON.parse(content);
-    return json.sessionToken || json.apiKey;
+    // 修正: 解析嵌套的 claudeAiOauth 結構
+    return json.claudeAiOauth?.accessToken || json.sessionToken || json.apiKey;
   } catch { return undefined; }
 }
 

@@ -23,12 +23,12 @@
 目標是讓工具具備真正的生產力，整合官方 SDK 並強化憑證解析。
 
 ### 1. 憑證解析強化 (Credentials Parsing)
-- [ ] 實作各平台的專屬處理器 (Platform-specific handlers)。
-- [ ] 優先接入各官方 CLI 工具 (如 `gh`, `ant`, `gcloud`) 進行憑證提取。
+- [x] 實作各平台的專屬處理器 (Platform-specific handlers)。
+- [/] 優先接入各官方 CLI 工具 (如 `gh`, `claude`, `gcloud`) 進行憑證提取。
 - [ ] 降級策略實作：CLI 工具失敗後，自動依序嘗試環境變數與設定檔解析。
 
 ### 2. 雲端 SDK 整合 (Cloud Integration)
-- [ ] 整合 Anthropic Claude SDK (針對架構重構任務)。
+- [/] 整合 Anthropic Claude SDK (針對架構重構任務)。
 - [ ] 整合 Google Generative AI SDK (針對長文本分析)。
 - [ ] 整合 OpenAI SDK (針對自動測試生成)。
 

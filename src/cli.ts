@@ -7,7 +7,11 @@ import * as dotenv from 'dotenv';
 import * as path from 'path';
 
 // 明確載入 .env.local
-dotenv.config({ path: path.join(process.cwd(), '.env.local') });
+const result = dotenv.config({ path: path.join(process.cwd(), '.env.local') });
+if (result.error) {
+  console.error('DEBUG: dotenv error:', result.error);
+}
+console.log('DEBUG: OMNI_MASTER_KEY present?', !!process.env.OMNI_MASTER_KEY);
 
 import { Command } from 'commander';
 import chalk from 'chalk';
@@ -67,7 +71,9 @@ program
 program
   .argument('[prompt]', '欲交付給 AI 的任務描述')
   .option('--mock', '強制進入 Mock 測試模式')
-  .action(async (prompt: string | undefined, options: { mock?: boolean }) => {
+  .option('--adapterType <type>', '選擇使用的適配器類型: sdk 或 cli')
+  .option('--model <model>', '指定使用的模型名稱')
+  .action(async (prompt: string | undefined, options: { mock?: boolean, adapterType?: 'sdk' | 'cli', model?: string }) => {
     // 若無輸入 prompt 則顯示幫助訊息
     if (!prompt) {
       program.help();
@@ -79,7 +85,11 @@ program
       const context = await buildContext(process.cwd());
 
       console.log(chalk.cyan('🚀 正在派發任務至 AI 引擎...'));
-      const result = await dispatch(prompt, context, { mock: options.mock ?? false });
+      const result = await dispatch(prompt, context, { 
+        mock: options.mock ?? false, 
+        adapterType: options.adapterType, 
+        model: options.model 
+      });
 
       console.log(chalk.yellow(`\n[來源: ${result.platform}]`));
       console.log(chalk.white(result.output));

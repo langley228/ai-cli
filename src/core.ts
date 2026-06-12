@@ -11,7 +11,8 @@ import OpenAI from 'openai';
 import { ProjectContext } from './types/context';
 import { Platform, DispatchOptions, DispatchResult } from './types/core';
 import { runMock, runOllama } from './local-adapter';
-import { callClaude } from './adapters/claude';
+import { cliAdapter, sdkAdapter } from './adapters/claude';
+
 
 // ... (keep ENCRYPTION_KEY, decrypt)
 
@@ -52,22 +53,48 @@ function decrypt(encryptedText: string): string {
 }
 
 /**
- * 根據任務描述語義化挑選最適合的平台
+ * 根據任務關鍵字或現有憑證挑選平台、適配器與模型
  * @param prompt 任務描述
- * @returns 建議的平台名稱
+ * @returns 平台、可選適配器類型與模型名稱
  */
-export async function selectPlatform(prompt: string): Promise<Platform> {
+export async function selectPlatformAndAdapter(prompt: string): Promise<{ platform: Platform, adapterType?: 'sdk' | 'cli', model?: string }> {
   const p = prompt.toLowerCase();
+  let model: string | undefined;
+
+  // 1. 自動偵測模型關鍵字
+  if (p.includes('haiku')) model = 'claude-haiku-4-5';
+  else if (p.includes('sonnet')) model = 'claude-sonnet-4-6';
+  else if (p.includes('opus')) model = 'claude-opus-4-8';
+
+
+  // 2. 顯式檢查模式關鍵字
+  if (p.includes('claude-sdk')) {
+    return { platform: 'claude-code', adapterType: 'sdk', model };
+  }
+  if (p.includes('claude-cli') || p.includes('claude')) {
+    return { platform: 'claude-code', adapterType: 'cli', model };
+  }
+  
   if (p.includes('重構') || p.includes('refactor') || p.includes('架構')) {
-    return 'claude-code';
+    return { platform: 'claude-code', adapterType: 'cli', model };
   }
   if (p.includes('git') || p.includes('pr') || p.includes('commit')) {
-    return 'copilot-cli';
+    return { platform: 'copilot-cli' };
   }
   if (p.includes('分析') || p.includes('analyze') || p.includes('long')) {
-    return 'gemini-cli';
+    return { platform: 'gemini-cli' };
   }
-  return 'openai-codex';
+
+  // 3. 若無關鍵字，從現有憑證中隨機挑選一個
+  const credentials = await getStoredCredentials();
+  if (credentials.length > 0) {
+    const availablePlatforms = credentials.map(c => c.platform as Platform);
+    const randomIndex = Math.floor(Math.random() * availablePlatforms.length);
+    return { platform: availablePlatforms[randomIndex], model };
+  }
+
+  // 4. 最後預設使用 OpenAI
+  return { platform: 'openai-codex', model };
 }
 
 /**
@@ -106,15 +133,21 @@ export async function dispatch(
 
   // 2. 挑選平台並檢查憑證
   const credentials = await getStoredCredentials();
-  const platform = await selectPlatform(prompt);
+  const { platform, adapterType, model } = await selectPlatformAndAdapter(prompt);
   const cred = credentials.find((c) => c.platform.startsWith(platform.split('-')[0]));
-  
+
   if (cred && cred.value) {
     try {
       let output = '';
-      if (platform === 'claude-code') output = await callClaude(prompt, context, cred.value);
+      const finalModel = model || options.model;
+      if (platform === 'claude-code') {
+        const adapter = adapterType === 'sdk' ? sdkAdapter : cliAdapter;
+        output = await adapter.generate(prompt, context, cred.value, finalModel);
+      }
       else if (platform === 'gemini-cli') output = await callGemini(prompt, context, cred.value);
       else if (platform === 'openai-codex') output = await callOpenAI(prompt, context, cred.value);
+
+
       else {
         // Fallback for copilot-cli
         output = `[模擬 ${platform} 回應] 憑證可用但 SDK 尚未完全串接。任務: ${prompt}`;

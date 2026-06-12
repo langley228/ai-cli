@@ -76,9 +76,16 @@ ai-cli 使用 AES-256-GCM 對憑證進行加密儲存，確保安全性。
    這會生成一個高強度的 `OMNI_MASTER_KEY`。
 
 2. **設定環境變數**:
-   在專案根目錄建立 `.env.local` 檔案（此檔案已列入 `.gitignore`），並填入生成的金鑰：
+   在專案根目錄建立 `.env.local` 檔案（此檔案已列入 `.gitignore`），並填入以下內容：
    ```bash
+   # 主加密金鑰 (必須)
    OMNI_MASTER_KEY=your_generated_key_here
+
+   # Claude SDK 模式所需 API Key (僅在不使用 CLI 封裝時需要)
+   ANTHROPIC_API_KEY=your_anthropic_api_key_here
+
+   # 若在受限網路環境下，請設定此項 (選擇性)
+   # HTTPS_PROXY=http://your-proxy-server:port
    ```
    ai-cli 會自動優先讀取根目錄下的 `.env.local` 檔案以載入環境變數。
 

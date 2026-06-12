@@ -10,6 +10,7 @@ describe('init 模組', () => {
   beforeEach(() => {
     vi.resetAllMocks();
     vi.mocked(os.homedir).mockReturnValue('/fake/home');
+    process.env.OMNI_MASTER_KEY = 'test-master-key';
   });
 
   it('應該能偵測到各平台存在的設定檔', async () => {

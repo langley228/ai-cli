@@ -66,11 +66,17 @@ async function detectClaudeCode(): Promise<string | undefined> {
 async function detectOpenAI(): Promise<string | undefined> {
   // 1. ENV
   if (process.env.OPENAI_API_KEY) return process.env.OPENAI_API_KEY;
-  // 2. File
+  // 2. File: ~/.openai/config.json
   try {
     const content = await fs.readFile(path.join(os.homedir(), '.openai/config.json'), 'utf-8');
     const json = JSON.parse(content);
     return json.apiKey;
+  } catch { /* ignore */ }
+  // 3. File: ~/.codex/auth.json
+  try {
+    const content = await fs.readFile(path.join(os.homedir(), '.codex/auth.json'), 'utf-8');
+    const json = JSON.parse(content);
+    return json.apiKey || json.token;
   } catch { return undefined; }
 }
 

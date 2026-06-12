@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { selectPlatform, dispatch } from '../src/core';
+import { selectPlatformAndAdapter, dispatch } from '../src/core';
 import * as fs from 'fs/promises';
 import * as os from 'os';
 import { runOllama, runMock } from '../src/local-adapter';
@@ -14,12 +14,28 @@ describe('core 模組', () => {
     vi.mocked(os.homedir).mockReturnValue('/fake/home');
   });
 
-  describe('selectPlatform', () => {
+  describe('selectPlatformAndAdapter', () => {
     it('應該根據關鍵字挑選正確平台', async () => {
-      expect(await selectPlatform('幫我重構這段程式碼')).toBe('claude-code');
-      expect(await selectPlatform('幫我提交 git commit')).toBe('copilot-cli');
-      expect(await selectPlatform('分析這份長文件')).toBe('gemini-cli');
-      expect(await selectPlatform('寫個測試案例')).toBe('openai-codex');
+      expect((await selectPlatformAndAdapter('幫我重構這段程式碼')).platform).toBe('claude-code');
+      expect((await selectPlatformAndAdapter('幫我提交 git commit')).platform).toBe('copilot-cli');
+      expect((await selectPlatformAndAdapter('分析這份長文件')).platform).toBe('gemini-cli');
+      expect((await selectPlatformAndAdapter('寫個測試案例')).platform).toBe('openai-codex');
+    });
+
+    it('應該從關鍵字偵測 Claude 模型名稱', async () => {
+      expect((await selectPlatformAndAdapter('用 opus 重構架構')).model).toBe('claude-opus-4-8');
+      expect((await selectPlatformAndAdapter('用 sonnet 重構')).model).toBe('claude-sonnet-4-6');
+      expect((await selectPlatformAndAdapter('用 haiku 重構')).model).toBe('claude-haiku-4-5');
+    });
+
+    it('應該從關鍵字偵測適配器類型 (sdk / cli)', async () => {
+      const sdk = await selectPlatformAndAdapter('claude-sdk 幫我寫');
+      expect(sdk.platform).toBe('claude-code');
+      expect(sdk.adapterType).toBe('sdk');
+
+      const cli = await selectPlatformAndAdapter('claude-cli 幫我寫');
+      expect(cli.platform).toBe('claude-code');
+      expect(cli.adapterType).toBe('cli');
     });
   });
 
@@ -44,6 +60,17 @@ describe('core 模組', () => {
 
       expect(result.platform).toBe('local');
       expect(result.output).toBe('ollama output');
+    });
+
+    it('Ollama 無法連線時應再降級至 mock', async () => {
+      vi.mocked(fs.readFile).mockRejectedValue(new Error('File not found'));
+      vi.mocked(runOllama).mockResolvedValue({ source: 'ollama', content: '無法連接到 Ollama: ECONNREFUSED' });
+      vi.mocked(runMock).mockResolvedValue({ source: 'mock', content: 'mock fallback' });
+
+      const result = await dispatch('test prompt', mockContext);
+
+      expect(result.platform).toBe('mock');
+      expect(result.output).toBe('mock fallback');
     });
   });
 });

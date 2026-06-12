@@ -1,19 +1,47 @@
 {
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
   "permissions": {
     "deny": [
       "Read(.env)",
-      "Read(.env.*)"
-    ]
+      "Read(.env.*)",
+      "Read(secrets/**)",
+      "Read(id_rsa)",
+      "Read(*.pem)",
+      "Read(*.key)",
+      "Read(credentials.json)",
+      "Read(**/.aws/**)",
+      "Read(**/.ssh/**)",
+      "Bash(cat:*.env*)",
+      "Bash(less:*.env*)",
+      "Bash(more:*.env*)",
+      "Bash(head:*.env*)",
+      "Bash(tail:*.env*)",
+      "Bash(grep:*.env*)",
+      "Bash(curl:*)",
+      "Bash(wget:*)",
+      "Bash(dig:*)",
+      "Bash(nslookup:*)"
+    ],
+    "ask": [
+      "Bash(git push:*)",
+      "Bash(rm -rf:*)"
+    ],
+    "defaultMode": "default"
   },
   "hooks": {
     "PreToolUse": [
       {
-        "matcher": "Read|Edit|Bash",
+        "matcher": "Read|Edit|Write|Bash",
         "hooks": [
           {
             "type": "command",
-            "command": "\"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/protect-env.sh\"",
-            "statusMessage": "檢查敏感檔案存取..."
+            "command": "\"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/protect-system-paths.sh\"",
+            "statusMessage": "檢查系統目錄存取..."
+          },
+          {
+            "type": "command",
+            "command": "\"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/protect-sensitive-files.sh\"",
+            "statusMessage": "檢查敏感資料檔案存取..."
           }
         ]
       }

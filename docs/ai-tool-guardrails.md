@@ -77,6 +77,24 @@ copilot --deny-tool='shell(curl)' --deny-tool='shell(wget)' \
 
 > 三支 hook 都用同一個 `field()` 函式，把 `command` / `file_path` / `absolute_path` / `path` 全部取出串成 `TARGET` 再比對，因此對三種工具的欄位差異天生相容（`field()` 掃整段 payload 找鍵值，不依賴巢狀結構）。
 
+### ⚠️ 重要觀念：ignore 檔不是安全邊界
+
+最常見的誤解是以為放個 `.claudeignore` / `.gitignore` 就擋住了。**「從搜尋隱藏」≠「禁止讀取」**：
+
+| ignore 檔 | 工具支援 | 效果 |
+|-----------|----------|------|
+| `.claudeignore` | ❌ **Claude Code 不存在此功能**（官方文件零提及） | 建了也是死檔 |
+| `.anthropicignore` | ❌ **不存在** | 死檔 |
+| `.copilotignore` | ❌ **不存在此格式**；Copilot 官方 content exclusion 走網頁設定，且**不套用到 Copilot CLI / Coding Agent** | 死檔，0 作用 |
+| `.gitignore`（在 Claude Code 中） | Grep 會跳過、Glob 預設仍找得到 | **只隱藏，直接 Read 仍讀得到**，非安全邊界 |
+| `.geminiignore`（Gemini CLI） | ✅ 支援 | ⚠️ **軟性**：只擋自動發現 / `@` 補全 / `read_many_files`；明確 `@.env` 或 `read_file` 仍可讀 |
+
+**結論：真正的硬封鎖只有兩條路**——
+1. 宣告式 deny（Claude `permissions.deny` 的 `Read(...)`；Copilot 無持久化設定）；
+2. PreToolUse / BeforeTool / preToolUse **hook**（三工具皆用，本專案的主力）。
+
+ignore 檔（`.geminiignore`）只能當 defense-in-depth 的軟性補強層，**不可單獨依賴**。Claude / Copilot 端沒有可用的 ignore 檔，全靠上述兩條。
+
 ---
 
 ## 3. 各工具檔案清單

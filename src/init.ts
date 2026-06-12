@@ -45,11 +45,17 @@ async function detectGitHubCopilot(): Promise<string | undefined> {
 async function detectClaudeCode(): Promise<string | undefined> {
   // 1. ENV
   if (process.env.ANTHROPIC_API_KEY) return process.env.ANTHROPIC_API_KEY;
-  // 2. File
+  // 2. File: settings.json
   try {
     const content = await fs.readFile(path.join(os.homedir(), '.claude/settings.json'), 'utf-8');
     const json = JSON.parse(content);
-    return json.env?.ANTHROPIC_API_KEY || json.apiKey;
+    if (json.env?.ANTHROPIC_API_KEY || json.apiKey) return json.env?.ANTHROPIC_API_KEY || json.apiKey;
+  } catch { /* ignore */ }
+  // 3. File: .credentials.json (Linux/OAuth)
+  try {
+    const content = await fs.readFile(path.join(os.homedir(), '.claude/.credentials.json'), 'utf-8');
+    const json = JSON.parse(content);
+    return json.sessionToken || json.apiKey;
   } catch { return undefined; }
 }
 

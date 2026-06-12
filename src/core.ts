@@ -6,24 +6,14 @@ import * as fs from 'fs/promises';
 import * as path from 'path';
 import * as os from 'os';
 import * as crypto from 'crypto';
-import Anthropic from '@anthropic-ai/sdk';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import OpenAI from 'openai';
 import { ProjectContext } from './types/context';
 import { Platform, DispatchOptions, DispatchResult } from './types/core';
 import { runMock, runOllama } from './local-adapter';
+import { callClaude } from './adapters/claude';
 
 // ... (keep ENCRYPTION_KEY, decrypt)
-
-async function callClaude(prompt: string, context: ProjectContext, apiKey: string): Promise<string> {
-  const anthropic = new Anthropic({ apiKey });
-  const msg = await anthropic.messages.create({
-    model: 'claude-3-5-sonnet-20241022',
-    max_tokens: 1024,
-    messages: [{ role: 'user', content: `${prompt}\n\nContext:\n${context.xml}` }],
-  });
-  return (msg.content[0] as any).text;
-}
 
 async function callGemini(prompt: string, context: ProjectContext, apiKey: string): Promise<string> {
   const genAI = new GoogleGenerativeAI(apiKey);

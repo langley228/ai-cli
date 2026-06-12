@@ -18,7 +18,7 @@
 - **檔案命名**: 使用 `kebab-case.ts` (例如: `local-adapter.ts`)。
 - **變數與函數**: 使用 `camelCase` (例如: `buildContext`, `isMockMode`)。
 - **類別、介面與型別**: 使用 `PascalCase` (例如: `ProjectContext`, `DispatchResult`)。
-- **常量 (Constants)**: 使用 `UPPER_SNAKE_CASE` (例如: `IGNORE_LIST`, `ENCRYPTION_KEY`)。
+- **常量 (Constants)**: 使用 `UPPER_SNAKE_CASE` (例如: `IGNORE_LIST`, `OLLAMA_ENDPOINT`, `DEFAULT_MODEL`)。
 
 ---
 

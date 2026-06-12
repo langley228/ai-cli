@@ -24,17 +24,34 @@
 
 ### 1. 憑證解析強化 (Credentials Parsing)
 - [x] 實作各平台的專屬處理器 (Platform-specific handlers)。
-- [x] 優先接入各官方 CLI 工具 (如 `gh`, `claude`, `gcloud`) 進行憑證提取。
-- [ ] 降級策略實作：CLI 工具失敗後，自動依序嘗試環境變數與設定檔解析。
+- [x] 降級策略實作：環境變數 → 設定檔的依序解析（四平台皆已支援）。
+- [ ] 接入各官方 CLI 工具：目前僅 GitHub Copilot 接入 `gh auth token`；Claude / OpenAI / Gemini 尚未接入官方 CLI。
 
 ### 2. 雲端 SDK 整合 (Cloud Integration)
-- [x] 導入 Vercel AI SDK (`ai`) 作為統一通訊層，取代碎片化 SDK。
-- [ ] 將 Claude, Gemini, OpenAI 適配器重構至統一介面。
+- [x] 導入 Vercel AI SDK (`@ai-sdk/anthropic`) 作為 Claude SDK 適配器的通訊層。
+- [ ] 將適配器重構至統一介面：Claude 已收斂至 `AiAdapter`（cli / sdk）；Gemini、OpenAI 仍在 `core.ts` 以官方 SDK 直接呼叫，待遷移。
+- [ ] 完成 Claude `sdkAdapter` 串接（目前為未實作狀態，呼叫即丟出錯誤，見技術債）。
 - [ ] 實作流式輸出 (Streaming) 支援 (v0.2.0 後續優化)。
 
 ### 3. 地端防禦優化
 - [ ] 支援更多 Ollama 模型配置與自動下載檢查。
 - [ ] 實作流式輸出 (Streaming)，提升終端機等待體驗。
+
+### 4. 品質工程 (Quality Engineering)
+- [x] 擴充單元測試：security、keygen、config、Claude cliAdapter / sdkAdapter，並補強 core 分支（共 9 檔 27 測試）。
+- [x] `tests/` 結構鏡像 `src/`（含 `tests/adapters/claude/`）。
+- [x] 文件對齊程式碼：更新 README 與 `docs/`（憑證路徑、模組規格、CLI 選項、技術債標註）。
+- [ ] 接上覆蓋率門檻（核心模組 90%）與 CI 自動化檢查。
+
+---
+
+## ⚠️ 已知問題 / 技術債 (Known Issues & Tech Debt)
+
+- **Claude `sdkAdapter` 未串接**：`src/adapters/claude/sdkAdapter.ts` 在實際呼叫前即 `throw`，其下 `generateText` 為無法執行的死碼。`--adapterType sdk` 目前不可用。
+- **scrypt 使用固定 salt**：`src/security.ts` 以固定字串 `'salt'` 衍生金鑰，相同密碼會得到相同金鑰，應改為隨機 salt 並隨設定檔儲存。
+- **`decrypt` 邏輯重複**：`core.ts` 與 `config.ts` 各有一份相同實作，宜抽至 `security.ts` 共用。
+- **DEBUG log 殘留**：`cli.ts`、`cliAdapter.ts` 有未加 dev guard 的除錯輸出（含 `OMNI_MASTER_KEY` 存在與否），正式版前須清除。
+- **命名混用**：套件名為 `ai-cli`，但設定目錄與環境變數仍沿用 `omni`（`.omni/config.json`、`OMNI_MASTER_KEY`）。
 
 ---
 
@@ -61,3 +78,4 @@
 ## 📅 更新日誌 (Changelog)
 
 - **2026-06-11**: 專案啟動，完成 v0.1.0 核心開發、開發規範建立及 GEMINI.md 指令集。
+- **2026-06-12**: 整合 Claude SDK / CLI 適配器與安全性金鑰管理；擴充單元測試並使 `tests/` 鏡像 `src/`；對齊 README 與 `docs/` 文件，新增技術債追蹤。

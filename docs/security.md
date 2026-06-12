@@ -2,9 +2,11 @@
 
 ## 加密演算法
 - **演算法**: AES-256-GCM
-- **金鑰衍生**: 使用 `crypto.scryptSync` 從環境變數 `OMNI_MASTER_KEY` 生成 32 bytes 金鑰。
+- **金鑰衍生**: 使用 `crypto.scryptSync(OMNI_MASTER_KEY, salt, 32)` 從環境變數 `OMNI_MASTER_KEY` 生成 32 bytes 金鑰。
 - **IV (Initialization Vector)**: 每次加密隨機生成 16 bytes。
 - **認證標籤 (Auth Tag)**: GCM 模式生成的標籤，用於驗證數據完整性。
+
+> ⚠️ **待改善**：目前 scrypt 使用固定字串 `'salt'` 作為 salt（見 `src/security.ts`），相同密碼會衍生出相同金鑰。後續應改用隨機 salt 並與設定檔一同儲存，以強化 KDF 防護。
 
 ## 存儲結構
 設定檔位於 `~/.omni/config.json`，格式如下：

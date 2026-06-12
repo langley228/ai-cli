@@ -7,10 +7,21 @@
 ## 1. 核心原則
 
 - **平台獨立性**: 每個 AI 平台的憑證偵測邏輯完全隔離，互不干擾。
-- **一致性優先級 (Detection Order)**: 無論平台為何，一律強制遵循以下優先順序：
+- **一致性優先級 (Detection Order)**: 以下為各平台偵測的目標優先順序：
   1. **官方 CLI 工具** (最高優先級): 利用平台官方工具獲取當前有效的 Token (如 `gh auth token`)。
   2. **環境變數 (Environment Variables)**: 支援 CI/CD 與開發環境的快速覆蓋。
   3. **設定檔解析 (Config File)**: 若上述皆無，才解析本地設定檔。
+
+> **目前實作狀態**：僅 **GitHub Copilot** 具備官方 CLI 偵測（`gh auth token`）；**Claude Code / OpenAI / Gemini** 目前為「環境變數 → 設定檔」，尚未接入各自的官方 CLI（屬 v0.2.0 規劃中的降級策略強化項目）。
+
+### 各平台偵測來源（依序）
+
+| 平台 | 來源 1 | 來源 2 | 來源 3 |
+|------|--------|--------|--------|
+| GitHub Copilot | `gh auth token` | `GH_TOKEN` / `GITHUB_TOKEN` | `~/.config/gh/hosts.yml` |
+| Claude Code | `ANTHROPIC_API_KEY` | `~/.claude/settings.json` | `~/.claude/.credentials.json` |
+| OpenAI | `OPENAI_API_KEY` | `~/.openai/config.json` | `~/.codex/auth.json` |
+| Gemini | `GEMINI_API_KEY` / `GOOGLE_API_KEY` | `~/.gemini/oauth_creds.json` | Google Cloud ADC |
 
 ---
 

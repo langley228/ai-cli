@@ -19,7 +19,7 @@
 - **命名範例**:
   - `src/context.ts` ➔ `tests/context.test.ts`
   - `src/init.ts` ➔ `tests/init.test.ts`
-  - `src/utils/helper.ts` ➔ `tests/utils/helper.test.ts`
+  - `src/adapters/claude/cliAdapter.ts` ➔ `tests/adapters/claude/cliAdapter.test.ts`
 
 ---
 

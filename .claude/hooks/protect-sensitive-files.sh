@@ -29,10 +29,13 @@ TARGET="$(field command) $(field file_path) $(field path)"
 # 避免誤中 .example.env（範本）或含相同字樣的其他檔名。
 PATTERNS=(
   '(^|[^[:alnum:]_.])\.env($|[^[:alnum:]])'        # .env / .env.local / .env.*（放行 .example.env）
+  '(^|[^[:alnum:]_.])secrets/'                      # secrets 目錄
   '(^|[^[:alnum:]_.])\.ssh/'                        # SSH 目錄
+  '(^|[^[:alnum:]_.])\.aws/'                        # AWS 憑證目錄
   '(^|[^[:alnum:]_.])id_(rsa|dsa|ecdsa|ed25519)'   # SSH 私鑰
-  '(^|[^[:alnum:]_.])\.aws/credentials'            # AWS 憑證
   '(^|[^[:alnum:]_.])\.(netrc|pgpass)'             # 機器登入 / DB 密碼檔
+  '(^|[^[:alnum:]_.])credentials\.json($|[^[:alnum:]])'  # 通用 credentials.json
+  '_authToken'                                      # npm registry 認證 token（.npmrc 內，順序無關）
   '\.pem($|[^[:alnum:]])'                           # 憑證 / 私鑰
   '\.key($|[^[:alnum:]])'                           # 私鑰
   '\.(p12|pfx|keystore|jks)($|[^[:alnum:]])'       # 金鑰庫

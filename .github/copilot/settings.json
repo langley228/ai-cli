@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "hooks": {
+    "preToolUse": [
+      {
+        "type": "command",
+        "matcher": "^(shell|read|view|edit|write)$",
+        "bash": "bash .github/copilot/hooks/protect-system-paths.sh",
+        "timeoutSec": 10
+      },
+      {
+        "type": "command",
+        "matcher": "^(shell|read|view|edit|write)$",
+        "bash": "bash .github/copilot/hooks/protect-sensitive-files.sh",
+        "timeoutSec": 10
+      }
+    ]
+  }
+}

@@ -10,13 +10,10 @@ import { exec } from 'child_process';
 import { promisify } from 'util';
 import chalk from 'chalk';
 import { DetectedCredential } from './types/init';
+import { getMasterKey } from './security';
 
 const execAsync = promisify(exec);
 export const utils = { execAsync };
-
-/** 加密使用的金鑰 */
-const ENCRYPTION_KEY = crypto.scryptSync('omni-secret-salt', 'salt', 32);
-const IV_LENGTH = 16;
 
 /**
  * 偵測 GitHub Copilot 憑證
@@ -109,8 +106,8 @@ async function detectGemini(): Promise<string | undefined> {
  * 使用 AES-256-GCM 加密字串
  */
 function encrypt(text: string): string {
-  const iv = crypto.randomBytes(IV_LENGTH);
-  const cipher = crypto.createCipheriv('aes-256-gcm', ENCRYPTION_KEY, iv);
+  const iv = crypto.randomBytes(16);
+  const cipher = crypto.createCipheriv('aes-256-gcm', getMasterKey(), iv);
   const encrypted = Buffer.concat([cipher.update(text, 'utf8'), cipher.final()]);
   const tag = cipher.getAuthTag();
   return Buffer.concat([iv, tag, encrypted]).toString('base64');

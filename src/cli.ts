@@ -3,15 +3,33 @@
  * CLI 主進入點封裝：使用 commander 封裝全局指令，整合 chalk 提供彩色終端機互動 UI。
  */
 
+import * as dotenv from 'dotenv';
+import * as path from 'path';
+
+// 明確載入 .env.local
+dotenv.config({ path: path.join(process.cwd(), '.env.local') });
+
 import { Command } from 'commander';
 import chalk from 'chalk';
 import { runInit } from './init';
-
 import { listCredentials } from './config';
+import { showKeyGeneration } from './keygen';
 import { buildContext } from './context';
 import { dispatch } from './core';
 
 const program = new Command();
+// ... (保留 program 定義)
+
+/**
+ * 註冊 keygen 指令
+ */
+program
+  .command('keygen')
+  .description('生成高強度的 OMNI_MASTER_KEY 金鑰')
+  .action(() => {
+    showKeyGeneration();
+  });
+
 
 program
   .name('ai-cli')

@@ -33,7 +33,7 @@ async function callOpenAI(prompt: string, context: ProjectContext, apiKey: strin
 
 // ... (update dispatch function)
 
-const ENCRYPTION_KEY = crypto.scryptSync('omni-secret-salt', 'salt', 32);
+import { getMasterKey } from './security';
 
 /**
  * 解密 Base64 編碼的加密文本
@@ -46,7 +46,7 @@ function decrypt(encryptedText: string): string {
   const tag = data.subarray(16, 32);
   const encrypted = data.subarray(32);
 
-  const decipher = crypto.createDecipheriv('aes-256-gcm', ENCRYPTION_KEY, iv);
+  const decipher = crypto.createDecipheriv('aes-256-gcm', getMasterKey(), iv);
   decipher.setAuthTag(tag);
   return Buffer.concat([decipher.update(encrypted), decipher.final()]).toString('utf8');
 }

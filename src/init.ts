@@ -27,7 +27,7 @@ async function detectGitHubCopilot(): Promise<string | undefined> {
     const { stdout } = await utils.execAsync('gh auth token');
     return stdout.trim();
   } catch (e) {
-    console.log('GitHub CLI failed', e);
+    // 忽略 CLI 失敗，靜默處理
   }
   // 2. ENV
   if (process.env.GH_TOKEN || process.env.GITHUB_TOKEN) return process.env.GH_TOKEN || process.env.GITHUB_TOKEN;
@@ -145,9 +145,10 @@ export async function encryptAndStore(credentials: DetectedCredential[]): Promis
 export async function runInit(): Promise<void> {
   const credentials = await detectCredentials();
   if (credentials.length === 0) {
-    console.log(chalk.yellow('未偵測到任何現有 AI 憑證。'));
-  } else {
-    console.log(chalk.green(`成功偵測到 ${credentials.length} 個平台憑證。`));
+    console.log(chalk.yellow('未偵測到任何現有 AI 憑證，已跳過加密儲存。'));
+    return;
   }
+  
+  console.log(chalk.green(`成功偵測到 ${credentials.length} 個平台憑證。`));
   await encryptAndStore(credentials);
 }
